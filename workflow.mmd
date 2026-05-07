@@ -1,0 +1,60 @@
+graph TD
+    Start([开始评测]) --> ReadCSV[读取输入CSV]
+    ReadCSV --> ProcessRow[处理每一行数据]
+    
+    ProcessRow --> Parse[解析飞书链接]
+    Parse --> GetData[获取表结构和权限数据]
+    
+    GetData --> Compare[代码快速对比]
+    
+    Compare --> Normalize[标准化数据]
+    
+    Normalize --> CompareTable{表结构对比是否一致?}
+    Normalize --> ComparePerm{权限配置对比是否一致?}
+    
+    CompareTable -->|一致| TableOK[表结构: 正确]
+    CompareTable -->|不一致| TableNeedLLM[表结构: 需要LLM分析]
+    
+    ComparePerm -->|一致| PermOK[权限配置: 正确]
+    ComparePerm -->|不一致| PermNeedLLM[权限配置: 需要LLM分析]
+    
+    TableOK --> CheckAll{代码对比全部一致?}
+    PermOK --> CheckAll
+    
+    CheckAll -->|YES| SkipAll[跳过LLM 直接标记正确]
+    SkipAll --> Combine1[合并结果]
+    Combine1 --> Output[输出CSV]
+    
+    CheckAll -->|NO| EnterLLM[进入LLM分析阶段]
+    
+    EnterLLM --> CheckTableLLM{表结构需要LLM?}
+    CheckTableLLM -->|YES| LLMTable[表结构LLM分析]
+    CheckTableLLM -->|NO| UseTableResult[使用代码对比结果]
+    
+    LLMTable --> CheckPermLLM{权限配置需要LLM?}
+    UseTableResult --> CheckPermLLM
+    
+    CheckPermLLM -->|YES| LLMPerm[权限配置LLM分析]
+    CheckPermLLM -->|NO| UsePermResult[使用代码对比结果]
+    
+    LLMPerm --> Combine2[合并LLM结果]
+    UsePermResult --> Combine2
+    
+    Combine2 --> Logic{最终结果判断}
+    Logic -->|都正确| Result1[结果: 正确]
+    Logic -->|任一失败| Result2[结果: 处理失败]
+    Logic -->|其他| Result3[结果: 异常]
+    
+    Result1 --> Output
+    Result2 --> Output
+    Result3 --> Output
+    
+    Output --> Done([完成])
+    
+    style Parse fill:#e1f5ff
+    style Compare fill:#fff4e1
+    style LLMTable fill:#ffe1f5
+    style LLMPerm fill:#ffe1f5
+    style Combine1 fill:#e1ffe1
+    style Combine2 fill:#e1ffe1
+    style SkipAll fill:#c1f0c1
